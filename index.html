@@ -13,9 +13,18 @@
         <h1>Job Application Tracker</h1>
         <p>Simple local tracker for your applications.</p>
       </div>
-      <button id="seedBtn" class="secondary">Add sample data</button>
+      <div class="hero-actions">
+        <button id="seedBtn" class="secondary">Add sample data</button>
+        <button id="exportBtn" class="secondary">Export JSON</button>
+        <label class="import-label secondary">
+          Import JSON
+          <input id="importInput" type="file" accept="application/json" hidden />
+        </label>
+      </div>
     </header>
+
     <section class="dashboard" id="dashboard"></section>
+
     <section class="panel form-panel">
       <h2>Add application</h2>
       <form id="applicationForm">
@@ -26,33 +35,67 @@
           <label>Source<input name="source" placeholder="LinkedIn, Job Bank..." /></label>
           <label>Status
             <select name="status">
-              <option>Saved</option><option>Applied</option><option>Interview</option><option>Offer</option><option>Rejected</option>
+              <option>Saved</option>
+              <option>Applied</option>
+              <option>Interview</option>
+              <option>Offer</option>
+              <option>Rejected</option>
+            </select>
+          </label>
+          <label>Priority
+            <select name="priority">
+              <option>Low</option>
+              <option selected>Medium</option>
+              <option>High</option>
             </select>
           </label>
           <label>Applied date<input type="date" name="appliedDate" /></label>
+          <label>Follow-up date<input type="date" name="followUpDate" /></label>
           <label class="full">Link<input type="url" name="link" placeholder="https://..." /></label>
           <label class="full">Notes<textarea name="notes" rows="3"></textarea></label>
         </div>
         <button type="submit">Save application</button>
       </form>
     </section>
+
     <section class="panel">
       <div class="toolbar">
         <h2>Applications</h2>
         <div class="toolbar-actions">
           <select id="statusFilter">
-            <option value="All">All statuses</option><option>Saved</option><option>Applied</option><option>Interview</option><option>Offer</option><option>Rejected</option>
+            <option value="All">All statuses</option>
+            <option>Saved</option>
+            <option>Applied</option>
+            <option>Interview</option>
+            <option>Offer</option>
+            <option>Rejected</option>
           </select>
           <input id="searchInput" placeholder="Search company or title" />
         </div>
       </div>
+      <div class="view-tabs">
+        <button id="tableViewBtn" class="tab active">Table</button>
+        <button id="kanbanViewBtn" class="tab">Kanban</button>
+      </div>
       <div id="emptyState" class="empty hidden">No applications match your filter.</div>
-      <div class="table-wrap">
+      <div id="tableView" class="table-wrap">
         <table>
-          <thead><tr><th>Company</th><th>Title</th><th>Status</th><th>Location</th><th>Date</th><th>Source</th><th>Actions</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Location</th>
+              <th>Dates</th>
+              <th>Source</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
           <tbody id="applicationsBody"></tbody>
         </table>
       </div>
+      <div id="kanbanView" class="kanban hidden"></div>
     </section>
   </div>
   <script src="app.js"></script>
