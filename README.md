@@ -11,6 +11,9 @@ Simple local web app for tracking job applications.
 - Delete an application
 - Dashboard counts by status and due-soon items
 - Table view + Kanban view
+- Edit existing applications
+- Sort by applied date, follow-up date, priority
+- Overdue follow-up highlighting
 - Export JSON / Import JSON
 - Local persistence using browser localStorage
 

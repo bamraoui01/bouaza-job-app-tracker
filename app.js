@@ -6,6 +6,7 @@ const dashboard = document.getElementById('dashboard');
 const statusFilter = document.getElementById('statusFilter');
 const searchInput = document.getElementById('searchInput');
 const seedBtn = document.getElementById('seedBtn');
+const sortBy = document.getElementById('sortBy');
 const exportBtn = document.getElementById('exportBtn');
 const importInput = document.getElementById('importInput');
 const emptyState = document.getElementById('emptyState');
@@ -14,6 +15,7 @@ const kanbanView = document.getElementById('kanbanView');
 const tableViewBtn = document.getElementById('tableViewBtn');
 const kanbanViewBtn = document.getElementById('kanbanViewBtn');
 let currentView = 'table';
+let editingId = null;
 
 const loadApplications = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 const saveApplications = (apps) => localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
@@ -37,18 +39,37 @@ function renderDashboard(apps) {
   dashboard.innerHTML = Object.entries(counts).map(([label, value]) => `<div class="card"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('');
 }
 
+function sortApplications(apps){
+  const priorityRank={High:0,Medium:1,Low:2};
+  const copy=[...apps];
+  switch(sortBy.value){
+    case 'oldest': return copy.sort((a,b)=>(a.appliedDate||'9999').localeCompare(b.appliedDate||'9999'));
+    case 'followup': return copy.sort((a,b)=>(a.followUpDate||'9999').localeCompare(b.followUpDate||'9999'));
+    case 'priority': return copy.sort((a,b)=>(priorityRank[a.priority||'Medium']??9)-(priorityRank[b.priority||'Medium']??9));
+    default: return copy.sort((a,b)=>(b.appliedDate||'').localeCompare(a.appliedDate||''));
+  }
+}
+
 function getFiltered(apps) {
   const status = statusFilter.value;
   const search = searchInput.value.trim().toLowerCase();
-  return apps.filter(app => {
+  return sortApplications(apps.filter(app => {
     const matchStatus = status === 'All' || app.status === status;
     const blob = `${app.company} ${app.title} ${app.location} ${app.source} ${app.notes}`.toLowerCase();
     return matchStatus && (!search || blob.includes(search));
-  });
+  }));
+}
+
+function startEdit(id){
+  const app=loadApplications().find(a=>a.id===id);
+  if(!app) return;
+  editingId=id;
+  Object.entries(app).forEach(([k,v])=>{ if(form.elements[k]) form.elements[k].value=v||''; });
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function renderTable(filtered) {
-  tbody.innerHTML = filtered.map(app => `<tr>
+  tbody.innerHTML = filtered.map(app => { const overdue = app.followUpDate && /Overdue/.test(dueLabel(app.followUpDate)); return `<tr class="${overdue?'overdue-row':''}">
     <td><strong>${esc(app.company)}</strong><div class="notes">${esc(app.notes || '')}</div></td>
     <td>${esc(app.title)}${app.link ? `<div><a href="${esc(app.link)}" target="_blank">Open link</a></div>` : ''}</td>
     <td><span class="status-badge status-${app.status}">${app.status}</span></td>
@@ -58,9 +79,9 @@ function renderTable(filtered) {
     <td>${esc(app.source || '-')}</td>
     <td><div class="actions">
       <select data-id="${app.id}" class="status-update">${statuses.map(s => `<option ${s===app.status?'selected':''}>${s}</option>`).join('')}</select>
-      <button class="danger delete-btn" data-id="${app.id}">Delete</button>
+      <button class="edit-btn secondary" data-id="${app.id}">Edit</button><button class="danger delete-btn" data-id="${app.id}">Delete</button>
     </div></td>
-  </tr>`).join('');
+  </tr>`}).join('');
 }
 
 function renderKanban(filtered) {
@@ -95,9 +116,16 @@ function render() {
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   const app = Object.fromEntries(new FormData(form).entries());
-  app.id = crypto.randomUUID();
   const apps = loadApplications();
-  apps.unshift(app);
+  if(editingId){
+    const i=apps.findIndex(a=>a.id===editingId);
+    app.id=editingId;
+    if(i>=0) apps[i]=app;
+    editingId=null;
+  } else {
+    app.id = crypto.randomUUID();
+    apps.unshift(app);
+  }
   saveApplications(apps);
   form.reset();
   render();
@@ -113,12 +141,14 @@ tbody.addEventListener('change', (e) => {
 });
 
 tbody.addEventListener('click', (e) => {
+  if (e.target.classList.contains('edit-btn')) { startEdit(e.target.dataset.id); return; }
   if (!e.target.classList.contains('delete-btn')) return;
   saveApplications(loadApplications().filter(a => a.id !== e.target.dataset.id));
   render();
 });
 
 statusFilter.addEventListener('change', render);
+sortBy.addEventListener('change', render);
 searchInput.addEventListener('input', render);
 tableViewBtn.addEventListener('click', () => { currentView = 'table'; render(); });
 kanbanViewBtn.addEventListener('click', () => { currentView = 'kanban'; render(); });
